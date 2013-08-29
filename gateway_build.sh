@@ -7,12 +7,12 @@ DEBUG_MODE=false
 HOST_TYPE="trial-gateway"
 FTP_CLIENT_FILE_NAME="ftp-0.17-38.el5.x86_64.rpm"
 FTP_SERVER_TEST_TOOL="nc-1.84-10.fc6.x86_64.rpm"
+YUM_PRIORITIES_PACKAGE="yum-priorities-1.1.16-21.el5.centos.noarch.rpm"
 MANIFEST_NAME="manifest"
 SCRIPT_NAME="bootstrap.sh"
 
 usage(){
-	echo -e "\e[33m Usage: ${0} [-i <YUM_SERVER_IPADDRESS>] [-d <DEBUG_MODE>] [-h <HELP>] JSON_FILE_ADDRESS\e[m"
-	echo -e "\e[33m \t-i Your YUM Server ip address \e[m"
+	echo -e "\e[33m Usage: ${0} [-d <DEBUG_MODE>] [-h <HELP>] JSON_FILE_ADDRESS\e[m"
 	echo -e "\e[33m \t-d Turn the debug mode on \e[m"
 	echo -e "\e[33m \t-h Help Informatino \e[m"
 	echo -e "\e[33m \t<YOUR '.JSON' FILE ADDRESS> \e[m"
@@ -22,9 +22,6 @@ usage(){
 while getopts i:dh flag
 do
 	case ${flag} in
-	i)
-	    FTP_SERVER_IP=${OPTARG}
-	    ;;
 	d)
 	    DEBUG_MODE=true
 	    ;;
@@ -46,6 +43,23 @@ debug(){
   ${DEBUG_MODE} && echo -e ${*}
 }
 
+selinux_shutdown(){
+  setenforce 0
+}
+
+yum_priorities_install(){
+    rpm -qa |grep yum-priorities > /dev/null
+    if [[ ${?} == 1 ]] 
+    then
+       if [[ -e ${YUM_PRIORITIES_PACKAGE} ]]
+       then
+           rpm -ivh ${YUM_PRIORITIES_PACKAGE}
+       else
+           echo -e "\e[31m Couldn't find yum-priorities package, please change to your uncompressed directory\e[0m"
+       fi
+    fi
+}
+
 ftp_client_install(){
     if ! have /usr/bin/ftp
     then
@@ -57,29 +71,6 @@ ftp_client_install(){
 	    echo -e "\e[31m Ftp client file doesn't exist, please change to your uncompressed directory \e[m"
 	    exit 2
 	fi
-    fi
-}
-
-ftp_server_test(){
-    if ! have /usr/bin/nc
-    then
-        if [[ ! -e ${FTP_SERVER_TEST_TOOL} ]]
-        then
-       	    echo -e "\e[31m Ftp server test tool can not be found, please change to your uncompressed directory \e[m"	
-	    exit 3
-        fi
-        rpm -ivh ${FTP_SERVER_TEST_TOOL}
-	if [[ ! $(/usr/bin/nc -v -w1 ${FTP_SERVER_IP} -z 21 2>/dev/null |cut -d " " -f 7) =~ "succeeded!" ]]
-        then
-	    echo -e "\e[31m Ftp server connect failed, please make sure your Ftp server is working correctly \e[m"
-	    exit 4
-        fi
-    else
-        if [[ ! $(/usr/bin/nc -v -w1 ${FTP_SERVER_IP} -z 21 2>/dev/null |cut -d " " -f 7) =~ "succeeded!" ]]
-        then
-	    echo -e "\e[31m Ftp server connect failed, please make sure your Ftp server is working correctly \e[m"
-	    exit 4
-        fi
     fi
 }
 
@@ -113,52 +104,9 @@ file_transfer(){
     fi
 }
 
-local_repo_file_build(){
-	if [[ ! -e /etc/yum.repos.d/local.repo ]]
-	then
-		ls /etc/yum.repos.d/ | while read line
-		do
-			mv /etc/yum.repos.d/${line} /etc/yum.repos.d/${line}.bak
-	    		debug mv /etc/yum.repos.d/${line} /etc/yum.repos.d/${line}.bak
-		done
-
-		touch /etc/yum.repos.d/local.repo
-	    	debug touch /etc/yum.repos.d/local.repo
-		cat <<EOF > /etc/yum.repos.d/local.repo
-[local_base]
-name=local_base
-#fill with your own yum_server ip_address in the following line
-baseurl=ftp://${FTP_SERVER_IP}/pub/base                  
-gpgcheck=0
-[local_updates]
-name=local_updates
-#fill with your own yum_server ip_address in the following line
-baseurl=ftp://${FTP_SERVER_IP}/pub/updates                 
-gpgcheck=0
-[local_epel]
-name=local_epel
-#fill with your own yum_server ip_address in the following line
-baseurl=ftp://${FTP_SERVER_IP}/pub/epel                   
-gpgcheck=0
-[local_vlabs]
-name=local_voxeo-labs
-#fill with your own yum_server ip_address in the following line
-baseurl=ftp://${FTP_SERVER_IP}/pub/voxeo-labs            
-gpgcheck=0 
-EOF
-		debug cat 
-	fi
-}
-
-if [[ -z ${FTP_SERVER_IP} || -z ${JSON_FILE_ADDRESS} ]]
+if [[ -z ${JSON_FILE_ADDRESS} ]]
 then
     usage
-else
-   if [[ ! ${FTP_SERVER_IP} =~ [0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3} ]] 
-   then
-        echo -e "\e[31m Please enter a invalid ip address \e[m" 
-        exit 6
-   fi
 fi
 
 if [[ -f ${JSON_FILE_ADDRESS} ]]
@@ -176,9 +124,9 @@ then
     exit 8
 fi
 
+selinux_shutdown
 ftp_client_install
-ftp_server_test
-local_repo_file_build 
+yum_priorities_install
 file_transfer
 
 if [[ ${DEBUG_MODE} = true ]]
