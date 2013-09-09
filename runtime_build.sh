@@ -8,7 +8,7 @@ HOST_TYPE="trial-runtime"
 FTP_CLIENT_FILE_NAME="ftp-0.17-38.el5.x86_64.rpm"
 FTP_SERVER_TEST_TOOL="nc-1.84-10.fc6.x86_64.rpm"
 YUM_PRIORITIES_PACKAGE="yum-priorities-1.1.16-21.el5.centos.noarch.rpm"
-MANIFEST_NAME="manifest"
+MANIFEST_NAME="release-manifest.txt"
 SCRIPT_NAME="bootstrap.sh"
 
 usage(){
@@ -40,7 +40,7 @@ have(){
 }
 
 debug(){
-  ${DEBUG_MODE} && echo -e ${*}
+  ${DEBUG_MODE} && echo -e "\e[36mDEBUG:[${*}]\e[0m"
 }
 
 selinux_shutdown(){
@@ -138,3 +138,6 @@ else
     sh ${SCRIPT_NAME} -m ${MANIFEST_NAME} ${HOST_TYPE}
     debug sh ${SCRIPT_NAME} -m ${MANIFEST_NAME} ${HOST_TYPE}
 fi
+
+rm -rf node.json
+
