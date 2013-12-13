@@ -14,7 +14,7 @@ usage(){
 	echo -e "\e[33m Usage: ${0} [-i <YUM_SERVER_IPADDRESS>] [-d <DEBUG_MODE>] [-h <HELP>] JSON_FILE_ADDRESS\e[m"
 	echo -e "\e[33m \t-i Your YUM Server ip address \e[m"
 	echo -e "\e[33m \t-d Turn the debug mode on \e[m"
-	echo -e "\e[33m \t-h Help Informatino \e[m"
+	echo -e "\e[33m \t-h Help Information \e[m"
 	echo -e "\e[33m \t<YOUR '.JSON' FILE ADDRESS> \e[m"
 	exit 1
 }
@@ -43,7 +43,7 @@ have(){
 }
 
 debug(){
-  ${DEBUG_MODE} && echo -e "\e[36mDEBUG:[${*}]\e[0m"
+  ${DEBUG_MODE} && echo -e ${*}
 }
 
 ftp_client_install(){
@@ -113,46 +113,53 @@ file_transfer(){
     fi
 }
 
-repo_file_create(){ 
-        touch /etc/yum.repos.d/local.repo 
-        debug touch /etc/yum.repos.d/local.repo 
-        cat <<EOF > /etc/yum.repos.d/local.repo 
-[local_base] 
-name=local_base 
-#fill with your own yum_server ip_address in the following line 
-baseurl=ftp://${FTP_SERVER_IP}/pub/base                   
+repo_file_create(){
+	touch /etc/yum.repos.d/local.repo
+    	debug touch /etc/yum.repos.d/local.repo
+	cat <<EOF > /etc/yum.repos.d/local.repo
+[local_base]
+name=local_base
+#fill with your own yum_server ip_address in the following line
+baseurl=ftp://${FTP_SERVER_IP}/pub/base                  
+gpgcheck=0
+[local_updates]
+name=local_updates
+#fill with your own yum_server ip_address in the following line
+baseurl=ftp://${FTP_SERVER_IP}/pub/updates                 
+gpgcheck=0
+[local_epel]
+name=local_epel
+#fill with your own yum_server ip_address in the following line
+baseurl=ftp://${FTP_SERVER_IP}/pub/epel                   
+gpgcheck=0
+[local_vlabs]
+name=local_voxeo-labs
+#fill with your own yum_server ip_address in the following line
+baseurl=ftp://${FTP_SERVER_IP}/pub/voxeo-labs            
 gpgcheck=0 
-[local_updates] 
-name=local_updates 
-#fill with your own yum_server ip_address in the following line 
-baseurl=ftp://${FTP_SERVER_IP}/pub/updates                  
-gpgcheck=0 
-[local_epel] 
-name=local_epel 
-#fill with your own yum_server ip_address in the following line 
-baseurl=ftp://${FTP_SERVER_IP}/pub/epel                    
-gpgcheck=0 
-[local_vlabs] 
-name=local_voxeo-labs 
-#fill with your own yum_server ip_address in the following line 
-baseurl=ftp://${FTP_SERVER_IP}/pub/voxeo-labs             
-gpgcheck=0  
-EOF 
-        debug cat  
-} 
- 
-local_repo_file_build(){ 
-        if [[ ! -e /etc/yum.repos.d/local.repo ]] 
-        then 
-                ls /etc/yum.repos.d/ | while read line 
-                do 
-                        mv /etc/yum.repos.d/${line} /etc/yum.repos.d/${line}.bak 
-                        debug mv /etc/yum.repos.d/${line} /etc/yum.repos.d/${line}.bak 
-                done 
-                repo_file_create 
-        else 
-                repo_file_create 
-        fi 
+EOF
+	debug cat 
+}
+
+local_repo_file_build(){
+	if [[ ! -e /etc/yum.repos.d/local.repo ]]
+	then
+		ls /etc/yum.repos.d/ | while read line
+		do
+			mv /etc/yum.repos.d/${line} /etc/yum.repos.d/${line}.bak
+	    		debug mv /etc/yum.repos.d/${line} /etc/yum.repos.d/${line}.bak
+		done
+		repo_file_create
+        else
+		repo_file_create
+	fi
+}
+
+chef_detect(){
+  if have /usr/bin/chef-solo || have /opt/chef/bin/chef-solo
+  then
+    rpm -e chef
+  fi
 }
 
 if [[ -z ${FTP_SERVER_IP} || -z ${JSON_FILE_ADDRESS} ]]
@@ -185,6 +192,7 @@ ftp_client_install
 ftp_server_test
 local_repo_file_build 
 file_transfer
+chef_detect
 
 if [[ ${DEBUG_MODE} = true ]]
 then
