@@ -43,7 +43,7 @@ have(){
 }
 
 debug(){
-  ${DEBUG_MODE} && echo -e ${*}
+  ${DEBUG_MODE} && echo -e "\e[36mDEBUG:[${*}]\e[0m"
 }
 
 ftp_client_install(){
@@ -108,41 +108,46 @@ file_transfer(){
     fi
 }
 
-local_repo_file_build(){
-	if [[ ! -e /etc/yum.repos.d/local.repo ]]
-	then
-		ls /etc/yum.repos.d/ | while read line
-		do
-			mv /etc/yum.repos.d/${line} /etc/yum.repos.d/${line}.bak
-	    		debug mv /etc/yum.repos.d/${line} /etc/yum.repos.d/${line}.bak
-		done
-
-		touch /etc/yum.repos.d/local.repo
-	    	debug touch /etc/yum.repos.d/local.repo
-		cat <<EOF > /etc/yum.repos.d/local.repo
-[local_base]
-name=local_base
-#fill with your own yum_server ip_address in the following line
-baseurl=ftp://${FTP_SERVER_IP}/pub/base                  
-gpgcheck=0
-[local_updates]
-name=local_updates
-#fill with your own yum_server ip_address in the following line
-baseurl=ftp://${FTP_SERVER_IP}/pub/updates                 
-gpgcheck=0
-[local_epel]
-name=local_epel
-#fill with your own yum_server ip_address in the following line
-baseurl=ftp://${FTP_SERVER_IP}/pub/epel                   
-gpgcheck=0
-[local_vlabs]
-name=local_voxeo-labs
-#fill with your own yum_server ip_address in the following line
-baseurl=ftp://${FTP_SERVER_IP}/pub/voxeo-labs            
+repo_file_create(){ 
+        touch /etc/yum.repos.d/local.repo 
+        debug touch /etc/yum.repos.d/local.repo 
+        cat <<EOF > /etc/yum.repos.d/local.repo 
+[local_base] 
+name=local_base 
+#fill with your own yum_server ip_address in the following line 
+baseurl=ftp://${FTP_SERVER_IP}/pub/base                   
 gpgcheck=0 
-EOF
-		debug cat
-	fi
+[local_updates] 
+name=local_updates 
+#fill with your own yum_server ip_address in the following line 
+baseurl=ftp://${FTP_SERVER_IP}/pub/updates                  
+gpgcheck=0 
+[local_epel] 
+name=local_epel 
+#fill with your own yum_server ip_address in the following line 
+baseurl=ftp://${FTP_SERVER_IP}/pub/epel                    
+gpgcheck=0 
+[local_vlabs] 
+name=local_voxeo-labs 
+#fill with your own yum_server ip_address in the following line 
+baseurl=ftp://${FTP_SERVER_IP}/pub/voxeo-labs             
+gpgcheck=0  
+EOF 
+        debug cat  
+} 
+ 
+local_repo_file_build(){ 
+        if [[ ! -e /etc/yum.repos.d/local.repo ]] 
+        then 
+                ls /etc/yum.repos.d/ | while read line 
+                do 
+                        mv /etc/yum.repos.d/${line} /etc/yum.repos.d/${line}.bak 
+                        debug mv /etc/yum.repos.d/${line} /etc/yum.repos.d/${line}.bak 
+                done 
+                repo_file_create 
+        else 
+                repo_file_create 
+        fi 
 }
 
 if [[ -z ${FTP_SERVER_IP} || -z ${JSON_FILE_ADDRESS} ]]
