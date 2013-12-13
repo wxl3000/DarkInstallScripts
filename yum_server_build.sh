@@ -53,14 +53,14 @@ file_transfer(){
 	   exit 2
 	fi
     else
-	dirName=$(basename `pwd`)
-        if [[ $dirName == yum_server ]]
+	dirName=$(basename `pwd`) 
+	if [[ $dirName == yum_server ]]
         then
-            echo -e "\e[33m Yum repos are already transfered to right place, no need to run it second time \e[m"
+	    echo -e "\e[33m Yum repos are already transfered to right place, no need to run it second time \e[m"
             exit 3
-        else
-            echo -e "\e[33m Directory 'yum' doesn't exist, please change to your uncompressed directroy and run it again \e[m"
-            exit 4
+	else
+	    echo -e "\e[33m Directory 'yum' doesn't exist, please change to your uncompressed directroy and run it again \e[m"
+	    exit 4
         fi
     fi
 }
