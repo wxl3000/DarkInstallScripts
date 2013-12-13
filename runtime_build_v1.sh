@@ -191,7 +191,7 @@ fi
 ftp_client_install
 ftp_server_test
 local_repo_file_build 
-#file_transfer
+file_transfer
 chef_detect
 
 if [[ ${DEBUG_MODE} = true ]]
